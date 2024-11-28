@@ -6,9 +6,12 @@
 #include <iostream>
 #include <thread>
 
+#include <nlohmann/json.hpp>
 #include <zmq.hpp>
 
 #include "zmq_node.hpp"
+
+using json = nlohmann::json;
 
 
 int main(int argc, char* argv[]) {
@@ -24,12 +27,19 @@ int main(int argc, char* argv[]) {
     
     // Exchanges some messages over REQ/REP sockets
     zmq::message_t msg;
+    json message;
+    std::uint8_t* data;
+
     for (int m = 1; m <= 10; ++m) {
-        auto res = socket.send(zmq::buffer(std::string("Message ") + std::to_string(m)), zmq::send_flags::dontwait);
+        message["messageNum"] = m;
+        auto res = socket.send(zmq::message_t(json::to_bson(message)), zmq::send_flags::dontwait);
         std::cout << "Send result: " << res.value() << std::endl;
         res = socket.recv(msg, zmq::recv_flags::none);
-        std::cout << "Reply: " << msg.to_string() << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        data = msg.data<std::uint8_t>();
+        message = json::from_bson(std::vector<std::uint8_t>(data, data + msg.size()/sizeof(std::uint8_t)));
+        std::cout << "Reply: " << message.dump() << std::endl;
+        message.clear();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     socket.close();

@@ -13,6 +13,8 @@ void ZmqNode::run() {
     std::chrono::milliseconds timeout(10);
     int messageCount = 0;
     zmq::message_t msg;
+    std::uint8_t* data;
+    json message;
 
     while (doRun) {
         const auto nin = poller->wait_all(events, timeout);
@@ -27,9 +29,13 @@ void ZmqNode::run() {
                 doRun = false;
                 break;
             }
+            messageCount++;
             std::cout << "Reception result: " << res.value() << std::endl;
-            std::cout << msg.to_string() << std::endl;
-            res = events[e].socket.send(zmq::buffer(std::string("Received ") + msg.to_string()), zmq::send_flags::dontwait);
+            data = msg.data<std::uint8_t>();
+            message = json::from_bson(std::vector<std::uint8_t>(data, data + msg.size()/sizeof(std::uint8_t)));
+            std::cout << message.dump() << std::endl;
+            message["count"] = messageCount;
+            res = events[e].socket.send(zmq::message_t(json::to_bson(message)), zmq::send_flags::dontwait);
         }
     }
 }

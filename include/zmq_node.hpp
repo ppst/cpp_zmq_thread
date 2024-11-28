@@ -14,6 +14,10 @@
 
 #include <zmq.hpp>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 
 namespace zmq_node {
 
