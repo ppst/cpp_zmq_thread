@@ -1,3 +1,4 @@
+![build](https://github.com/ppst/cpp_zmq_thread/actions/workflows/c-cpp.yml/badge.svg?event=push)
 # Constructing and running a ZeroMQ node in separate thread
 
 A wrapper class [ZmqNodeWrapper](https://github.com/ppst/cpp_zmq_thread/blob/d462c6ebf9c36f1467d857ea86ec9bd1269afed0/include/zmq_node.hpp#L71) starts and stops a ZeroMQ node [ZmqNode](https://github.com/ppst/cpp_zmq_thread/blob/d462c6ebf9c36f1467d857ea86ec9bd1269afed0/include/zmq_node.hpp#L29) in a separate thread
