@@ -7,11 +7,13 @@
 #include <thread>
 
 #include <nlohmann/json.hpp>
+#include <nlohmann/json-schema.hpp>
 #include <zmq.hpp>
 
 #include "zmq_node.hpp"
 
 using json = nlohmann::json;
+using json_validator = nlohmann::json_schema::json_validator;
 
 
 int main(int argc, char* argv[]) {
@@ -30,6 +32,32 @@ int main(int argc, char* argv[]) {
     json message;
     std::uint8_t* data;
 
+    const json replySchema = R"(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Reply",
+        "properties": {
+            "count": {
+                "$ref": "#/definitions/count"
+            },
+            "messageNum": {
+                "$ref": "#/definitions/messageNum"
+            }
+        },
+        "definitions": {
+            "count": {
+                "type": "integer",
+                "minimum": 1
+            },
+            "messageNum": {
+                "type": "integer",
+                "minimum": 1
+            }
+        }
+    })"_json;
+
+    json_validator validator{replySchema};
+
     for (int m = 1; m <= 10; ++m) {
         message["messageNum"] = m;
         auto res = socket.send(zmq::message_t(json::to_bson(message)), zmq::send_flags::dontwait);
@@ -37,7 +65,12 @@ int main(int argc, char* argv[]) {
         res = socket.recv(msg, zmq::recv_flags::none);
         data = msg.data<std::uint8_t>();
         message = json::from_bson(std::vector<std::uint8_t>(data, data + msg.size()/sizeof(std::uint8_t)));
-        std::cout << "Reply: " << message.dump() << std::endl;
+        try {
+            validator.validate(message);
+            std::cout << "Reply: " << message.dump() << std::endl;
+        } catch (const std::exception &e) {
+            std::cerr << "Message validation failed: " << e.what() << "\n";
+        }
         message.clear();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

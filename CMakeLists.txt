@@ -59,6 +59,7 @@ target_include_directories(
 target_link_libraries(zmqthread
     PUBLIC cppzmq
            nlohmann_json::nlohmann_json
+           nlohmann_json_schema_validator
 )
 
 ##
